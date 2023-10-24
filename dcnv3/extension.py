@@ -9,7 +9,6 @@ import sys
 from warnings import warn
 
 import torch
-from torch._classes import _ClassNamespace
 from torch._ops import _OpNamespace
 
 extension_namespace = os.path.basename(os.path.dirname(__file__))
@@ -17,13 +16,13 @@ extension_namespace = os.path.basename(os.path.dirname(__file__))
 
 def _get_extension_path(lib_name):
     lib_dir = os.path.dirname(__file__)
-    if os.name == 'nt':
+    if os.name == "nt":
         # Register the main library location on the default DLL path
         import ctypes
         import sys
 
-        kernel32 = ctypes.WinDLL('kernel32.dll', use_last_error=True)
-        with_load_library_flags = hasattr(kernel32, 'AddDllDirectory')
+        kernel32 = ctypes.WinDLL("kernel32.dll", use_last_error=True)
+        with_load_library_flags = hasattr(kernel32, "AddDllDirectory")
         prev_error_mode = kernel32.SetErrorMode(0x0001)
 
         if with_load_library_flags:
@@ -35,7 +34,7 @@ def _get_extension_path(lib_name):
             res = kernel32.AddDllDirectory(lib_dir)
             if res is None:
                 err = ctypes.WinError(ctypes.get_last_error())
-                err.strerror += f' Error adding "{lib_dir}" to the DLL directories.'
+                err.strerror += f" Error adding \"{lib_dir}\" to the DLL directories."
                 raise err
 
         kernel32.SetErrorMode(prev_error_mode)
@@ -63,10 +62,10 @@ try:
     # To find cuda related dlls we need to make sure the
     # conda environment/bin path is configured Please take a look:
     # https://stackoverflow.com/questions/59330863/cant-import-dll-module-in-python
-    # Please note: if some path can't be added using add_dll_directory we simply ignore this path
-    if os.name == 'nt' and (3, 8) <= sys.version_info < (3, 9):
-        env_path = os.environ['PATH']
-        path_arr = env_path.split(';')
+    # Please note: if some path can"t be added using add_dll_directory we simply ignore this path
+    if os.name == "nt" and (3, 8) <= sys.version_info < (3, 9):
+        env_path = os.environ["PATH"]
+        path_arr = env_path.split(";")
         for path in path_arr:
             if os.path.exists(path):
                 try:
@@ -74,7 +73,7 @@ try:
                 except Exception:
                     pass
 
-    lib_path = _get_extension_path('_C')
+    lib_path = _get_extension_path("_C")
     torch.ops.load_library(lib_path)
     _HAS_OPS = True
 
@@ -85,15 +84,14 @@ try:
 except (ImportError, OSError):
     pass
 finally:
-    _classes = _ClassNamespace(extension_namespace)
     _ops = _OpNamespace(extension_namespace)
 
 
 def _assert_has_ops():
     if not _has_ops():
         raise RuntimeError(
-            'Couldn\'t load custom C++ ops. Recompile C++ extension with:\n'
-            '\tpython setup.py build_ext --inplace'
+            "Couldn\'t load custom C++ ops. Recompile C++ extension with:\n"
+            "\tpython setup.py build_ext --inplace"
         )
 
 
@@ -118,15 +116,22 @@ def _check_cuda_version(minor=True):
         else:
             ext_major = int(ext_version[0:2])
             ext_minor = int(ext_version[3])
-        t_version = torch_version_cuda.split('.')
+        t_version = torch_version_cuda.split(".")
         t_major = int(t_version[0])
         t_minor = int(t_version[1])
         if t_major != ext_major or (minor and t_minor != ext_minor):
             raise RuntimeError(
-                'Detected that PyTorch and Extension were compiled with different CUDA versions. '
-                f'PyTorch has CUDA Version={t_major}.{t_minor} and '
-                f'Extension has CUDA Version={ext_major}.{ext_minor}. '
-                'Please reinstall the Extension that matches your PyTorch install.'
+                "Detected that PyTorch and Extension were compiled with different CUDA versions. "
+                f"PyTorch has CUDA Version={t_major}.{t_minor} and "
+                f"Extension has CUDA Version={ext_major}.{ext_minor}. "
+                "Please reinstall the Extension that matches your PyTorch install."
+            )
+        elif t_minor != ext_minor:
+            warn(
+                "Detected that PyTorch and Extension have a minor version mismatch. "
+                f"PyTorch has CUDA Version={t_major}.{t_minor} and "
+                f"Extension has CUDA Version={ext_major}.{ext_minor}. "
+                "Most likely this shouldn\'t be a problem."
             )
     return _version
 
@@ -139,12 +144,12 @@ def _load_library(lib_name):
     # explicitly calling `LoadLibraryExW` with the following flags:
     #  - LOAD_LIBRARY_SEARCH_DEFAULT_DIRS (0x1000)
     #  - LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR (0x100)
-    if os.name == 'nt' and sys.version_info < (3, 8):
-        _kernel32 = ctypes.WinDLL('kernel32.dll', use_last_error=True)
-        if hasattr(_kernel32, 'LoadLibraryExW'):
+    if os.name == "nt" and sys.version_info < (3, 8):
+        _kernel32 = ctypes.WinDLL("kernel32.dll", use_last_error=True)
+        if hasattr(_kernel32, "LoadLibraryExW"):
             _kernel32.LoadLibraryExW(lib_path, None, 0x00001100)
         else:
-            warn('LoadLibraryExW is missing in kernel32.dll')
+            warn("LoadLibraryExW is missing in kernel32.dll")
 
     torch.ops.load_library(lib_path)
 
